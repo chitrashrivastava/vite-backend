@@ -41,7 +41,7 @@ app.get('/', (req, res) => {
     res.send('Hello');
 });
 
-app.use('/user', indexRouter);
+app.use('/user', indexRouter); // /user indexrouter me jaega /user ke age k (subroutes)
 app.use('/admin', adminRouter)
 app.get("/api/getkey", (req, res) =>
     res.status(200).json({ key: process.env.RAZORPAY_API_KEY })

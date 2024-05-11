@@ -41,7 +41,7 @@ exports.registerAdmin = catchAsyncErrors(async (req, res, next) => {
 exports.signinAdmin = catchAsyncErrors(async (req, res, next) => {
     try {
         console.log(req.body)
-        const { email, password } = req.body.formData;
+        const { email, password } = req.body;
 
         // Find the admin by email
         const admin = await Admin.findOne({ email });
@@ -53,7 +53,7 @@ exports.signinAdmin = catchAsyncErrors(async (req, res, next) => {
 
 
         // Check if the password matches
-        const isPasswordMatch = await bcrypt.compare(password, admin.password);
+        const isPasswordMatch =  bcrypt.compare(password, admin.password);
 
         // If password does not match, return 401
         if (!isPasswordMatch) {

@@ -6,6 +6,6 @@ const { isAuthenticated } = require('../middlewares/auth')
 router.post('/currentAdmin',isAuthenticated,currentAdmin)
 router.post('/signup',registerAdmin)
 router.post('/login',signinAdmin)
-router.post('/logout',signOutAdmin)
+router.get('/logout',signOutAdmin)
 
 module.exports=router

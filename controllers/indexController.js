@@ -23,10 +23,10 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
         const { password } = req.body;
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ success: false, message: 'Admin with this email already exists' });
+            return res.status(400).json({ success: false, message: 'User with this email already exists' });
         }
         const newUser = new User({
-            email,
+            email, 
             password,
         });
 
@@ -41,7 +41,7 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
 exports. signInUser = catchAsyncErrors(async (req, res, next) => {
     try {
         console.log(req.body)
-        const { email, password } = req.body.formData;
+        const { email, password } = req.body;
 
         // Find the admin by email
         const user = await User.findOne({ email });
@@ -61,31 +61,31 @@ exports. signInUser = catchAsyncErrors(async (req, res, next) => {
         }
 
         // If everything is correct, send token
-        sendToken(admin, 200, res);
+        sendToken(user, 200, res);
     } catch (error) {
         console.error('Error in loginAdmin controller:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
 
-// exports.currentAdmin = catchAsyncErrors(async (req, res, next) => {
-//     try {
-//         console.log("======", req.id)
-//         const admin = await Admin.findById(req.id).exec();
-//         console.log("=====:", admin)
-//         admin.isAuth = true
-//         if (!admin) {
-//             return res.status(404).json({ success: false, message: "User not found" });
-//         }
-//         res.json({ success: true, admin });
-//     } catch (error) {
-//         console.error("Error fetching current user:", error);
-//         res.status(500).json({ success: false, message: "Internal server error" });
-//     }
-// });
+exports.currentUser = catchAsyncErrors(async (req, res, next) => {
+    try {
+        console.log("======", req.id)
+        const user = await User.findById(req.id).exec();
+        console.log("=====:", user)
+        user.isAuth = true
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error("Error fetching current user:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
 
-// exports.signOutAdmin= catchAsyncErrors(async (req, res, next) => {
-//     res.clearCookie("token")
-//     res.json({ message: "Successfully Signout" })
+exports.signOutUser= catchAsyncErrors(async (req, res, next) => {
+    res.clearCookie("token")
+    res.json({ message: "Successfully User Signout" })
 
-// })
+})
