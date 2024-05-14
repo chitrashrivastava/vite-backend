@@ -29,7 +29,6 @@ const adminSchema = new mongoose.Schema({
     password: {
         type: String,
         minlength: [8, "Password should be at least 8 characters long"],
-        maxlength: [32, "Password should not exceed 32 characters"]
     },
     lastLogin: {
         type: Date,
@@ -57,7 +56,6 @@ adminSchema.methods.getjwttoken = function () {
         expiresIn: process.env.JWT_EXPIRE
     })
 }
-
 
 
 const Admin = mongoose.model("Admin", adminSchema);

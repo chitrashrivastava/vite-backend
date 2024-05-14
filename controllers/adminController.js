@@ -89,3 +89,38 @@ exports.signOutAdmin= catchAsyncErrors(async (req, res, next) => {
     res.json({ message: "Successfully Signout" })
 
 })
+
+exports.adminSendMail = catchAsyncErrors(async (req, res, next) => {
+    const admin = await Admin.findOne({ email: req.body.email }).exec()
+    if (!admin) {
+        return next(
+            new ErrorHandler("Admin Not Found with this email address", 404)
+        )
+    }
+    const url1 = `${req.protocol}://${req.get("host")}/admin/forget-link/${admin._id}`
+    const url = `http://localhost:5173/admin/forget-link/${admin._id}`
+    sendmail(req, url1, res, url, next)
+    res.json({ admin, url1 })
+    admin.resetPassword = "1"
+    await admin.save()
+})
+
+exports.adminForgetLink = catchAsyncErrors(async (req, res, next) => {
+    console.log(req.body);
+    const admin = await Admin.findById(req.params.id).exec();
+    console.log(req.body.password);
+    if (!admin) {
+      return next(new ErrorHandler("Admin Not Found with this email address", 404));
+    }
+  
+    if (admin.resetPassword === "1") {
+      admin.resetPassword = "0";
+      admin.password = req.body.password;
+      await admin.save();
+      res.status(200).json({ message: "Password Updated Successfully" });
+    } else {
+      return next(new ErrorHandler("Link Expired", 404));
+    }
+  });
+  
+
