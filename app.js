@@ -9,7 +9,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const adminRouter = require('./routes/adminRouter');
 const indexRouter = require('./routes/indexRouter');
-
+const productRouter = require('./routes/productRouter')
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -41,6 +41,7 @@ app.get('/', (req, res) => {
     res.send('Hello');
 });
 
+app.use('/product',productRouter)
 app.use('/user', indexRouter); // /user indexrouter me jaega /user ke age k (subroutes)
 app.use('/admin', adminRouter)
 app.get("/api/getkey", (req, res) =>
