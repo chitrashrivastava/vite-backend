@@ -1,6 +1,6 @@
 const express=require('express')
 const router=express.Router()
-const {registerAdmin,signinAdmin,currentAdmin,signOutAdmin,fetchAllProducts,adminSendMail,adminForgetLink, uploadProducts}=require('../controllers/adminController')
+const {registerAdmin,signinAdmin,currentAdmin,signOutAdmin,fetchAllProducts,adminSendMail,adminForgetLink, uploadProducts, fetchProductsStore}=require('../controllers/adminController')
 const { isAuthenticated } = require('../middlewares/auth')
 // const { uploadProducts } = require('../controllers/productController')
 
@@ -12,5 +12,7 @@ router.post('/send-mail',adminSendMail)
 router.post('/forget-link/:id',adminForgetLink)
 router.post('/upload-products',isAuthenticated,uploadProducts)
 router.get('/getallproduct', isAuthenticated, fetchAllProducts)
+router.get('/fetchProductStore/:store', isAuthenticated, fetchProductsStore)
+
 
 module.exports=router

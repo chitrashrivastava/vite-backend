@@ -257,3 +257,56 @@ exports.adminForgetLink = catchAsyncErrors(async (req, res, next) => {
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
+
+
+exports.fetchProductsStore = catchAsyncErrors(async(req,res,next)=>{
+    try {
+        let storeName = req.params.store;
+        const page = req.query.page || 1;
+        const limit = 12;
+        const { search } = req.query;
+
+        let productQuery = {};
+        let storeQuery = {};
+
+        // Make storeName case insensitive
+        if (storeName) {
+            storeName = new RegExp(storeName, 'i');
+            storeQuery.storeName = storeName;
+        }
+
+        if (search) {
+            productQuery = {
+                $or: [
+                    { productName: { $regex: search, $options: 'i' } },
+                    { category: { $regex: search, $options: 'i' } },
+                ]
+            };
+        }
+
+        const skip = (page - 1) * limit;
+        
+        const products = await Product.find(productQuery)
+            .skip(skip)
+            .limit(limit);
+
+        const productIds = products.map(product => product._id);
+
+        // Fetch store stocks from StoreStock collection matching the storeName
+        storeQuery.productId = { $in: productIds };
+        const storeStocks = await Store.find(storeQuery)
+            .populate('productId');
+
+            const totalProducts = products.length; // Use products.length as the count for now
+            console.log(totalProducts)
+        res.status(200).json({
+            success: true,
+            currentPage: page,
+            totalPages: Math.ceil(totalProducts / limit),
+            count: products.length,
+            products: storeStocks
+        });
+    } catch (error) {
+        next(error);
+    }
+})
