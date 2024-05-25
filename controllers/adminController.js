@@ -2,11 +2,12 @@ const { catchAsyncErrors } = require('../middlewares/catchAsyncError')
 const Admin=require('../models/adminModel')
 const { sendToken } = require('../utils/sendToken');
 const bcrypt = require('bcryptjs')
-const ErrorHandler = require('../utils/ErrorHandler')
+const ErrorHandler = require('../utils/errorHandler')
 const imagekit=require('../utils/imagekit').initimagekit()
 const Product=require('../models/productModel')
 const { v4: uuidv4 } = require('uuid');
 const {sendmail} =require('../utils/nodemailer')
+
 // const User=require('../models/userModel');
 // const Order = require('../models/orderModel');
 const Store=require('../models/storeModel')
@@ -37,7 +38,8 @@ exports.registerAdmin = catchAsyncErrors(async (req, res, next) => {
     }
 });
 
-exports.uploadProducts = catchAsyncErrors(async (req, res, next) => {
+
+exports.uploadProduct = catchAsyncErrors(async (req, res, next) => {
     try {
         console.log(req.body);
 
@@ -63,7 +65,7 @@ exports.uploadProducts = catchAsyncErrors(async (req, res, next) => {
         }
 
         const { data, name } = imageFiles.image;
-        const uniqueFileName = `${Date.now()}_${uuidv4()}_${name}`;
+        const uniqueFileName =` ${Date.now()}_${uuidv4()}_${name}`;
         const { fileId, url } = await imagekit.upload({
             file: data,
             fileName: uniqueFileName,
@@ -259,10 +261,10 @@ exports.adminForgetLink = catchAsyncErrors(async (req, res, next) => {
 });
 
 
-exports.fetchProductsStore = catchAsyncErrors(async(req,res,next)=>{
+exports.fetchProductStockByStore = catchAsyncErrors(async (req, res, next) => {
     try {
         let storeName = req.params.store;
-        const page = req.query.page || 1;
+        const page = parseInt(req.query.page) || 1;
         const limit = 12;
         const { search } = req.query;
 
@@ -284,29 +286,178 @@ exports.fetchProductsStore = catchAsyncErrors(async(req,res,next)=>{
             };
         }
 
+        // Find store stocks matching the storeName
+        const storeStocks = await Store.find(storeQuery);
+        const productIds = storeStocks.map(data => data.productId);
+
+        // Find products with the matching IDs and search query
+        productQuery._id = { $in: productIds };
+
+        const totalProducts = await Product.countDocuments(productQuery);
         const skip = (page - 1) * limit;
-        
-        const products = await Product.find(productQuery)
+        const products = await Product.find(productQuery)  // Apply productQuery filter here
             .skip(skip)
             .limit(limit);
+        console.log(products);
 
-        const productIds = products.map(product => product._id);
+        const paginatedStoreStocks = await Store.find({
+            ...storeQuery,
+            productId: { $in: products.map(product => product._id) }
+        }).populate('productId');
+        console.log(paginatedStoreStocks);
 
-        // Fetch store stocks from StoreStock collection matching the storeName
-        storeQuery.productId = { $in: productIds };
-        const storeStocks = await Store.find(storeQuery)
-            .populate('productId');
-
-            const totalProducts = products.length; // Use products.length as the count for now
-            console.log(totalProducts)
         res.status(200).json({
             success: true,
             currentPage: page,
             totalPages: Math.ceil(totalProducts / limit),
             count: products.length,
-            products: storeStocks
+            products: paginatedStoreStocks
         });
     } catch (error) {
         next(error);
     }
-})
+});
+
+exports.deleteProducts = catchAsyncErrors(async (req, res, next) => {
+    try {
+        
+        const storeId = req.params.storeId;
+        let store = req.params.store;
+
+        // Convert store name to case-insensitive regular expression
+        store = new RegExp(store, 'i');
+
+        // Find and delete the product from the specified store in the StoreStock schema
+        const productInStock = await Store.findOneAndDelete({ _id:storeId, storeName: store });
+
+        if (!productInStock) {
+            return res.status(404).json({ success: false, message: 'Product not found in the specified store' });
+        }
+
+        // If the product has an image, delete it from ImageKit
+        if (productInStock.productId.image && productInStock.productId.image.fieldId) {
+            await imagekit.deleteFile(productInStock.productId.image.fieldId);
+        }
+
+        // Check if the product is associated with any other stores
+        const otherStores = await Store.findOne({ productId });
+
+        // If the product is not associated with any other stores, remove it from the Product schema
+        if (!otherStores) {
+            await Product.findByIdAndDelete(productId);
+        }
+
+        // Send success response
+        res.status(200).json({ success: true, message: 'Product deleted successfully from the specified store' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
+    try {
+        console.log(req.body);
+        const { id } = req.params;
+        const updatedImageData = req.files ? req.files.image : null;
+        const { stock, store, ...updatedProductData } = req.body;
+
+        // Parse additionalStock from request body
+        const additionalStock = [];
+        for (const key in req.body) {
+            if (key.startsWith('additionalStock[') && key.endsWith('][store]')) {
+                const index = key.match(/additionalStock\[(\d+)\]\[store\]/)[1];
+                additionalStock[index] = additionalStock[index] || {};
+                additionalStock[index].store = req.body[key];
+            }
+            if (key.startsWith('additionalStock[') && key.endsWith('][stock]')) {
+                const index = key.match(/additionalStock\[(\d+)\]\[stock\]/)[1];
+                additionalStock[index] = additionalStock[index] || {};
+                additionalStock[index].stock = req.body[key];
+            }
+        }
+
+        // Find the product by ID
+        const product = await Product.findById(id);
+
+        // If product is not found, return an error
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        // Update product details
+        Object.assign(product, updatedProductData);
+
+        // If there's a new image, upload it
+        if (updatedImageData) {
+            const { data, name } = updatedImageData;
+            const uniqueFileName = `${Date.now()}_${uuidv4()}_${name}`;
+            const { fileId, url } = await imagekit.upload({
+                file: data,
+                fileName: uniqueFileName,
+                folder: '/groceryproducts'
+            });
+
+            // Update the product image information
+            product.image = { fileId, url };
+        }
+
+        // Save the updated product
+        await product.save();
+
+        // Process the main store stock update
+        let mainStoreStock = await Store.findOne({ productId: id, storeName: store });
+
+        if (!mainStoreStock) {
+            // If store stock entry does not exist, create a new one
+            mainStoreStock = new Store({
+                productId: id,
+                storeName: store,
+                stock: stock
+            });
+        } else {
+            // If store stock entry exists, update the stock
+            mainStoreStock.stock = stock;
+        }
+
+        // Save the main store stock entry (whether new or updated)
+        await mainStoreStock.save();
+
+        // Process additional stock entries
+        for (const additional of additionalStock) {
+            if (additional && additional.store && additional.stock) {
+                let storeStock = await Store.findOne({ productId: id, storeName: additional.store });
+
+                if (!storeStock) {
+                    // If store stock entry does not exist, create a new one
+                    storeStock = new Store({
+                        productId: id,
+                        storeName: additional.store,
+                        stock: additional.stock
+                    });
+                } else {
+                    // If store stock entry exists, update the stock
+                    storeStock.stock = additional.stock;
+                }
+
+                // Save each store stock entry (whether new or updated)
+                await storeStock.save();
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Product updated successfully',
+            product
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message
+        });
+    }
+});

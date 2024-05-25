@@ -8,7 +8,6 @@ router.post('/signup', registerUser)
 router.post('/login', signInUser)
 
 router.post('/currentUser',isAuthenticated,currentUser)
-
 router.get('/logout',signOutUser)
 router.post('/send-mail',userSendmail)
 router.post('/forget-link/:id',userResetPassword)

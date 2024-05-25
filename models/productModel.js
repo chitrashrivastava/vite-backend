@@ -3,20 +3,19 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
     productName: {
         type: String,
-        // required: [true, 'Product name is required']
+        required: [true, 'Product name is required']
     },
     description: {
         type: String,
     },
     sellingPrice: {
         type: Number,
-        // required: [true, 'Product Selling price is required'],
-        // min: [0, 'Selling Price cannot be negative']
+        required: [true, 'Product Selling price is required'],
+        min: [0, 'Selling Price cannot be negative']
     },
-   
     category: {
         type: String,
-        // required: [true, 'Product category is required']
+        required: [true, 'Product category is required']
     },
     brand: {
         type: String,
@@ -26,22 +25,22 @@ const productSchema = new mongoose.Schema({
     },
     MRP: {
         type: Number,
-        // required: [true, 'MRP is required'],
+        required: [true, 'MRP is required'],
     },
     size: {
         type: String,
     },
     gst: {
         type: Number,
-        // required: [true, 'GST percentage is required'],
-        // min: [0, 'GST percentage cannot be negative'],
-        // max: [100, 'GST percentage cannot exceed 100']
+        required: [true, 'GST percentage is required'],
+        min: [0, 'GST percentage cannot be negative'],
+        max: [100, 'GST percentage cannot exceed 100']
     },
     cgst: {
         type: Number,
-        // required: [true, 'CGST percentage is required'],
-        // min: [0, 'CGST percentage cannot be negative'],
-        // max: [100, 'CGST percentage cannot exceed 100']
+        required: [true, 'CGST percentage is required'],
+        min: [0, 'CGST percentage cannot be negative'],
+        max: [100, 'CGST percentage cannot exceed 100']
     },
     image: {
         type: Object,

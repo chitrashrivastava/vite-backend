@@ -41,7 +41,7 @@ app.get('/', (req, res) => {
     res.send('Hello');
 });
 
-app.use('/product',productRouter)
+app.use('/products',productRouter)
 app.use('/user', indexRouter); // /user indexrouter me jaega /user ke age k (subroutes)
 app.use('/admin', adminRouter)
 app.get("/api/getkey", (req, res) =>
