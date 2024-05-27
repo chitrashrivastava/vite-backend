@@ -461,3 +461,28 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
         });
     }
 });
+
+exports.outOfStock = catchAsyncErrors(async (req, res, next) => {
+    try {
+        const { store } = req.params;
+
+        // Find products with stock 0 in the specified store
+        const productsWithZeroStock = await Store.find({ stock: 0, storeName: store }).populate('productId');
+
+        // Extract relevant information and send response
+        const result = productsWithZeroStock.map(item => ({
+            product: item.productId,  // Include entire product document
+        
+        }));
+
+        // Send response
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        // Handle errors
+        console.error(error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
